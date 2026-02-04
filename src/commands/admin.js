@@ -9,6 +9,7 @@ const DEFAULTS = {
 
 // Roles autorizados
 const ALLOWED_ROLES = [
+    '1340887228431335457', //owner
     '1343040895313907805', // co-owner
     '1343060398932230246', // manager
     '1343061152732545164', // events
@@ -173,3 +174,4 @@ module.exports = {
         }
     }
 };
+
