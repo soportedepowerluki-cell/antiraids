@@ -21,8 +21,8 @@ const client = new Client({
     ]
 });
 
-// IDs de tus servidores permitidos (Whitelist)
-const ALLOWED_SERVERS = ['1433313752488607821', '1343353558665396406'];
+// IDs de tus servidores permitidos (Whitelist) - ID AÑADIDA AQUÍ
+const ALLOWED_SERVERS = ['1433313752488607821', '1343353558665396406', '1468695069858201806'];
 const DIAS_MINIMOS = 3;
 
 client.commands = new Collection();
@@ -56,6 +56,8 @@ client.once(Events.ClientReady, async () => {
         if (!ALLOWED_SERVERS.includes(guild.id)) {
             console.log(`🚫 Saliendo de: ${guild.name}`);
             guild.leave().catch(() => {});
+        } else {
+            console.log(`🏠 Servidor autorizado detectado: ${guild.name}`);
         }
     });
 });
@@ -63,15 +65,12 @@ client.once(Events.ClientReady, async () => {
 // --- INTERACCIONES ---
 client.on(Events.InteractionCreate, async interaction => {
     try {
-        // COMANDOS SLASH
         if (interaction.isChatInputCommand()) {
             const command = client.commands.get(interaction.commandName);
             if (command) {
                 await command.execute(interaction);
             }
         }
-
-        // MODALES DE CONFIRMACIÓN PARA PANICO
         else if (interaction.isModalSubmit()) {
             if (interaction.customId === 'seguridad_panico_confirm') {
                 const confirmValue = interaction.fields.getTextInputValue('confirm_text');
@@ -79,10 +78,8 @@ client.on(Events.InteractionCreate, async interaction => {
                     return interaction.reply({ content: '❌ Confirmación incorrecta. Acción cancelada.', ephemeral: true });
                 }
 
-                // Ejecutamos el comando panico manualmente
                 const command = client.commands.get('seguridad');
                 if (command) {
-                    // Ejecutamos con subcomando 'panico' forzado
                     await command.execute(interaction, { forcedSubcommand: 'panico' });
                 }
             }
