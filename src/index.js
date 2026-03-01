@@ -1,5 +1,16 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Collection, REST, Routes, ActivityType, Events, MessageFlags } = require('discord.js');
+const {
+    Client,
+    GatewayIntentBits,
+    Collection,
+    REST,
+    Routes,
+    ActivityType,
+    Events,
+    MessageFlags,
+    EmbedBuilder,
+    PermissionFlagsBits
+} = require('discord.js');
 const http = require('http');
 
 // --- SERVIDOR PARA RENDER (MANTENER VIVO) ---
@@ -31,6 +42,158 @@ try {
 } catch (e) {
     console.error("❌ Error cargando comandos:", e.message);
 }
+
+/**
+ * PanicManager
+ * - Mantiene el estado de pánico por guild (memoria en runtime).
+ * - Al activar: crea overwrites en cada canal para negar SendMessages/AddReactions y guarda el overwrite anterior.
+ * - Al desactivar: restaura overwrites previos (o los elimina si no existían).
+ */
+class PanicManager {
+    constructor(client) {
+        this.client = client;
+        // Map<guildId, { enabled: boolean, by: {id, tag}, since: Date, channelStates: Map<channelId, {allow:[], deny:[]}> }>
+        this.states = new Map();
+    }
+
+    isPanic(guildId) {
+        const s = this.states.get(guildId);
+        return s ? s.enabled : false;
+    }
+
+    async enablePanic(guild, byUser) {
+        if (this.isPanic(guild.id)) return false;
+        const channelStates = new Map();
+
+        for (const channel of guild.channels.cache.values()) {
+            try {
+                // solo aplicar a canales textuales donde el bot pueda gestionar permisos y que sean visibles
+                if (!channel || !channel.isTextBased || !channel.isTextBased()) continue;
+                // Guardar overwrite actual de @everyone si existe
+                const overwrite = channel.permissionOverwrites.cache.get(guild.roles.everyone.id);
+                if (overwrite) {
+                    channelStates.set(channel.id, {
+                        allow: overwrite.allow.toArray ? overwrite.allow.toArray() : [],
+                        deny: overwrite.deny.toArray ? overwrite.deny.toArray() : []
+                    });
+                } else {
+                    channelStates.set(channel.id, null); // no tenía overwrite
+                }
+
+                // Aplicar bloqueo (niega envío y reacciones)
+                await channel.permissionOverwrites.edit(guild.roles.everyone, {
+                    SendMessages: false,
+                    AddReactions: false
+                }, { reason: `Modo pánico activado por ${byUser.tag}` }).catch(() => {});
+            } catch (err) {
+                console.error(`Error bloqueando canal ${channel.id} en ${guild.id}:`, err.message);
+            }
+        }
+
+        this.states.set(guild.id, {
+            enabled: true,
+            by: { id: byUser.id, tag: byUser.tag },
+            since: new Date(),
+            channelStates
+        });
+
+        // Notificar al staff
+        await this.notifyStaff(guild, true, byUser);
+        console.log(`🔒 Modo pánico ACTIVADO en ${guild.name} por ${byUser.tag}`);
+        return true;
+    }
+
+    async disablePanic(guild, byUser) {
+        if (!this.isPanic(guild.id)) return false;
+        const state = this.states.get(guild.id);
+        if (!state) return false;
+
+        for (const [channelId, prev] of state.channelStates.entries()) {
+            try {
+                const channel = guild.channels.cache.get(channelId);
+                if (!channel || !channel.isTextBased || !channel.isTextBased()) continue;
+
+                if (prev === null) {
+                    // No tenía overwrite antes -> borrarlo
+                    await channel.permissionOverwrites.delete(guild.roles.everyone, `Restaurando tras desactivar modo pánico por ${byUser.tag}`).catch(() => {});
+                } else {
+                    // Reconstruir objeto de permisos previos
+                    const perms = {};
+                    (prev.allow || []).forEach(p => perms[p] = true);
+                    (prev.deny || []).forEach(p => perms[p] = false);
+                    await channel.permissionOverwrites.edit(guild.roles.everyone, perms, { reason: `Restaurado por ${byUser.tag}` }).catch(() => {});
+                }
+            } catch (err) {
+                console.error(`Error restaurando canal ${channelId} en ${guild.id}:`, err.message);
+            }
+        }
+
+        this.states.delete(guild.id);
+        // Notificar al staff
+        await this.notifyStaff(guild, false, byUser);
+        console.log(`🔓 Modo pánico DESACTIVADO en ${guild.name} por ${byUser.tag}`);
+        return true;
+    }
+
+    async notifyStaff(guild, enabled, byUser) {
+        // Prepara embed
+        const embed = new EmbedBuilder()
+            .setTitle(enabled ? '🚨 MODO PÁNICO ACTIVADO' : '✅ MODO PÁNICO DESACTIVADO')
+            .setDescription(enabled ? `Activado por **${byUser.tag}**` : `Desactivado por **${byUser.tag}**`)
+            .addFields(
+                { name: 'Servidor', value: `${guild.name} (${guild.id})`, inline: true },
+                { name: 'Hora', value: new Date().toISOString(), inline: true }
+            )
+            .setColor(enabled ? 0xE74C3C : 0x2ECC71)
+            .setTimestamp();
+
+        // Si hay canal configurado, enviar ahí
+        const staffChannelId = process.env.STAFF_CHANNEL_ID;
+        if (staffChannelId) {
+            const ch = guild.channels.cache.get(staffChannelId);
+            if (ch && ch.isTextBased && ch.isTextBased()) {
+                try {
+                    await ch.send({ embeds: [embed] }).catch(() => {});
+                    return;
+                } catch (e) {
+                    console.error('No pude notificar en STAFF_CHANNEL_ID:', e.message);
+                }
+            }
+        }
+
+        // Si no hay canal, intentar notificar a los miembros con rol STAFF_ROLE_ID o rol 'Staff'
+        let role;
+        if (process.env.STAFF_ROLE_ID) {
+            role = guild.roles.cache.get(process.env.STAFF_ROLE_ID);
+        }
+        if (!role) {
+            // buscar por nombres comunes
+            role = guild.roles.cache.find(r => /staff|mod|moderador|administrador/i.test(r.name));
+        }
+
+        if (role) {
+            const members = role.members;
+            for (const member of members.values()) {
+                try {
+                    await member.send({ embeds: [embed] }).catch(() => {});
+                } catch (err) {
+                    // fallamos para algunos DMs; continuar
+                }
+            }
+        } else {
+            // fallback: enviar al owner DM
+            try {
+                const owner = await guild.fetchOwner();
+                if (owner) await owner.user.send({ embeds: [embed] }).catch(() => {});
+            } catch (err) {
+                console.error('No pude notificar staff ni owner:', err.message);
+            }
+        }
+    }
+}
+
+// Instanciar PanicManager y enlazarlo al cliente para uso desde comandos
+client.panicManager = new PanicManager(client);
 
 client.once(Events.ClientReady, async () => {
     console.log(`🛡️ LOGUEADO COMO: ${client.user.tag}`);
@@ -92,6 +255,33 @@ client.on(Events.GuildMemberAdd, async member => {
     if (antiguedad < DIAS_MINIMOS && member.kickable) {
         await member.kick(`Anti-Raid: Cuenta menor a ${DIAS_MINIMOS} días.`).catch(() => {});
         console.log(`⛔ Expulsado: ${member.user.tag} (Edad: ${antiguedad.toFixed(1)} días)`);
+    }
+});
+
+/**
+ * Protección en tiempo real: interceptar mensajes si el servidor está en modo pánico
+ * - Borra el mensaje
+ * - Envía un aviso corto (autodestruible) para que el usuario sepa que está bloqueado
+ */
+client.on('messageCreate', async message => {
+    try {
+        if (!message.guild || message.author.bot) return;
+        if (!client.panicManager.isPanic(message.guild.id)) return;
+
+        // permitir que el staff y administradores sigan escribiendo
+        const staffRoleId = process.env.STAFF_ROLE_ID;
+        const member = message.member;
+        if (!member) return;
+
+        const isStaff = (staffRoleId && member.roles.cache.has(staffRoleId)) || member.permissions.has(PermissionFlagsBits.ManageGuild) || member.permissions.has(PermissionFlagsBits.Administrator);
+        if (isStaff) return; // staff puede escribir
+
+        // borrar mensaje y avisar
+        await message.delete().catch(() => {});
+        const aviso = await message.channel.send({ content: '🔒 Modo pánico activo — los usuarios están temporalmente bloqueados para enviar mensajes.' }).catch(() => null);
+        if (aviso) setTimeout(() => aviso.delete().catch(() => {}), 5000);
+    } catch (err) {
+        console.error('Error en messageCreate (modo pánico):', err.message);
     }
 });
 
