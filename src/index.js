@@ -28,7 +28,9 @@ const client = new Client({
     ]
 });
 
-// debug-inicio: pega esto al inicio del archivo (antes de client.login)
+// >>> DEBUG ADICIONAL: PONER ANTES DE client.login(...)
+const https = require('https');
+
 process.on('unhandledRejection', err => {
   console.error('UNHANDLED REJECTION >', err && err.stack ? err.stack : err);
 });
@@ -36,10 +38,26 @@ process.on('uncaughtException', err => {
   console.error('UNCAUGHT EXCEPTION >', err && err.stack ? err.stack : err);
 });
 
-console.log('DEBUG: node version', process.version);
-console.log('DEBUG: running file', __filename);
-console.log('DEBUG: DISCORD_TOKEN existe?', !!process.env.DISCORD_TOKEN);
-console.log('DEBUG: DISCORD_TOKEN longitud (no muestro token):', process.env.DISCORD_TOKEN ? process.env.DISCORD_TOKEN.length : 'missing');
+client.on('error', err => console.error('CLIENT ERROR >', err && err.stack ? err.stack : err));
+client.on('warn', info => console.warn('CLIENT WARN >', info));
+client.on('shardError', err => console.error('SHARD ERROR >', err && err.stack ? err.stack : err));
+client.on('invalidated', () => console.warn('CLIENT INVALIDATED > Token invalidated or session closed'));
+
+// Test de conectividad simple a la API de Discord
+https.get('https://discord.com/api/v10/gateway', res => {
+  console.log('CONNECTIVITY TEST: discord.com statusCode=', res.statusCode);
+  res.resume();
+}).on('error', e => {
+  console.error('CONNECTIVITY TEST ERROR:', e.message);
+});
+
+// Timeout visible por si client.login() se queda "colgado"
+let loginResolved = false;
+setTimeout(() => {
+  if (!loginResolved) {
+    console.warn('TIMEOUT: client.login() no respondió en 30s. Puede ser bloqueo de red o token inválido.');
+  }
+}, 30000);
 
 // Whitelist con tu servidor añadido
 const ALLOWED_SERVERS = ['1433313752488607821', '1343353558665396406', '1468695069858201806'];
@@ -299,10 +317,14 @@ client.on('messageCreate', async message => {
 });
 
 client.login(process.env.DISCORD_TOKEN)
-    .then(() => console.log("🔥 Intentando conectar a Discord..."))
-    .catch(err => {
-        console.error("❌ ERROR AL LOGUEAR:", err);
-        process.exit(1);
-    });
+  .then(() => {
+    loginResolved = true;
+    console.log('🔥 LOGIN CORRECTO: conectado a Discord.');
+  })
+  .catch(err => {
+    loginResolved = true;
+    console.error('❌ ERROR EN LOGIN:', err && err.stack ? err.stack : err);
+    process.exit(1);
+  });
 
 
