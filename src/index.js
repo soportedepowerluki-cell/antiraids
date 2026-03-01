@@ -29,7 +29,6 @@ const client = new Client({
 });
 
 // >>> DEBUG ADICIONAL: PONER ANTES DE client.login(...)
-const https = require('https');
 
 process.on('unhandledRejection', err => {
   console.error('UNHANDLED REJECTION >', err && err.stack ? err.stack : err);
@@ -318,6 +317,7 @@ client.login(process.env.DISCORD_TOKEN)
     console.error('❌ ERROR EN LOGIN:', err && err.stack ? err.stack : err);
     process.exit(1);
   });
+
 
 
 
