@@ -285,4 +285,10 @@ client.on('messageCreate', async message => {
     }
 });
 
-client.login(process.env.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN)
+    .then(() => console.log("🔥 Intentando conectar a Discord..."))
+    .catch(err => {
+        console.error("❌ ERROR AL LOGUEAR:", err);
+        process.exit(1);
+    });
+
