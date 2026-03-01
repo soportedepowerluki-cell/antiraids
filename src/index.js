@@ -43,14 +43,6 @@ client.on('warn', info => console.warn('CLIENT WARN >', info));
 client.on('shardError', err => console.error('SHARD ERROR >', err && err.stack ? err.stack : err));
 client.on('invalidated', () => console.warn('CLIENT INVALIDATED > Token invalidated or session closed'));
 
-// Test de conectividad simple a la API de Discord
-https.get('https://discord.com/api/v10/gateway', res => {
-  console.log('CONNECTIVITY TEST: discord.com statusCode=', res.statusCode);
-  res.resume();
-}).on('error', e => {
-  console.error('CONNECTIVITY TEST ERROR:', e.message);
-});
-
 // Timeout visible por si client.login() se queda "colgado"
 let loginResolved = false;
 setTimeout(() => {
@@ -326,5 +318,6 @@ client.login(process.env.DISCORD_TOKEN)
     console.error('❌ ERROR EN LOGIN:', err && err.stack ? err.stack : err);
     process.exit(1);
   });
+
 
 
