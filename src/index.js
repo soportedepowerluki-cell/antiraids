@@ -28,6 +28,19 @@ const client = new Client({
     ]
 });
 
+// debug-inicio: pega esto al inicio del archivo (antes de client.login)
+process.on('unhandledRejection', err => {
+  console.error('UNHANDLED REJECTION >', err && err.stack ? err.stack : err);
+});
+process.on('uncaughtException', err => {
+  console.error('UNCAUGHT EXCEPTION >', err && err.stack ? err.stack : err);
+});
+
+console.log('DEBUG: node version', process.version);
+console.log('DEBUG: running file', __filename);
+console.log('DEBUG: DISCORD_TOKEN existe?', !!process.env.DISCORD_TOKEN);
+console.log('DEBUG: DISCORD_TOKEN longitud (no muestro token):', process.env.DISCORD_TOKEN ? process.env.DISCORD_TOKEN.length : 'missing');
+
 // Whitelist con tu servidor añadido
 const ALLOWED_SERVERS = ['1433313752488607821', '1343353558665396406', '1468695069858201806'];
 const DIAS_MINIMOS = 3;
@@ -291,4 +304,5 @@ client.login(process.env.DISCORD_TOKEN)
         console.error("❌ ERROR AL LOGUEAR:", err);
         process.exit(1);
     });
+
 
