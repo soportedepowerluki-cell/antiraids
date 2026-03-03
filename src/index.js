@@ -306,16 +306,16 @@ client.on('messageCreate', async message => {
         console.error('Error en messageCreate (modo pánico):', err.message);
     }
 });
+console.log("🔥 LLEGANDO A LOGIN...");
 
 client.login(process.env.DISCORD_TOKEN)
   .then(() => {
     loginResolved = true;
-    console.log('🔥 LOGIN CORRECTO: conectado a Discord.');
+    console.log('🔥 LOGIN CORRECTO');
   })
   .catch(err => {
     loginResolved = true;
-    console.error('❌ ERROR EN LOGIN:', err && err.stack ? err.stack : err);
-    process.exit(1);
+    console.error('❌ ERROR EN LOGIN:', err);
   });
 
 
