@@ -1,6 +1,7 @@
 if (!process.env.TOKEN) {
     console.error("❌ ERROR: La variable 'TOKEN' no detectada en Render.");
     process.exit(1);
+}
 const {
     Client,
     GatewayIntentBits,
