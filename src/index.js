@@ -1,6 +1,4 @@
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
-}
+require('dotenv').config();
 const {
     Client,
     GatewayIntentBits,
@@ -332,4 +330,5 @@ client.login(process.env.DISCORD_TOKEN)
 
     process.exit(1);
   });
+
 
