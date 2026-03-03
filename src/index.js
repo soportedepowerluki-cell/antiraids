@@ -1,4 +1,6 @@
-require('dotenv').config();
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 const {
     Client,
     GatewayIntentBits,
@@ -308,6 +310,12 @@ client.on('messageCreate', async message => {
 });
 console.log("🔥 LLEGANDO A LOGIN...");
 
+// 🔎 Verificación fuerte del token
+if (!process.env.DISCORD_TOKEN) {
+  console.error("❌ NO SE ENCONTRÓ DISCORD_TOKEN EN LAS VARIABLES DE ENTORNO.");
+  process.exit(1);
+}
+
 client.login(process.env.DISCORD_TOKEN)
   .then(() => {
     loginResolved = true;
@@ -315,10 +323,13 @@ client.login(process.env.DISCORD_TOKEN)
   })
   .catch(err => {
     loginResolved = true;
-    console.error('❌ ERROR EN LOGIN:', err);
+
+    if (err.message.includes("An invalid token")) {
+      console.error("❌ EL TOKEN ES INVÁLIDO. Genera uno nuevo en el Developer Portal.");
+    } else {
+      console.error("❌ ERROR EN LOGIN:", err.message);
+    }
+
+    process.exit(1);
   });
-
-
-
-
 
