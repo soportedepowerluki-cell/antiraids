@@ -310,9 +310,9 @@ client.on('messageCreate', async message => {
 });
 console.log("🔥 LLEGANDO A LOGIN...");
 
-// 🔎 Verificación fuerte del token
-if (!process.env.DISCORD_TOKEN) {
-  console.error("❌ NO SE ENCONTRÓ DISCORD_TOKEN EN LAS VARIABLES DE ENTORNO.");
+// 🔎 Verificación de tu variable personalizada
+if (!process.env.TOKEN) {
+  console.error("❌ NO SE ENCONTRÓ LA VARIABLE 'TOKEN' EN LAS VARIABLES DE ENTORNO.");
   process.exit(1);
 }
 
@@ -320,7 +320,6 @@ client.login(process.env.TOKEN)
   .then(() => {
     loginResolved = true;
     console.log('🔥 LOGIN CORRECTO');
-  })
   })
   .catch(err => {
     loginResolved = true;
@@ -333,7 +332,3 @@ client.login(process.env.TOKEN)
 
     process.exit(1);
   });
-
-
-
-
