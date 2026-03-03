@@ -1,4 +1,6 @@
-require('dotenv').config();
+if (!process.env.TOKEN) {
+    console.error("❌ ERROR: La variable 'TOKEN' no detectada en Render.");
+    process.exit(1);
 const {
     Client,
     GatewayIntentBits,
@@ -58,7 +60,7 @@ client.commands = new Collection();
 
 // Cargar comando de administración
 try {
-    const adminCommand = require('./commands/admin.js');
+    const adminCommand = require('./admin.js');
     client.commands.set(adminCommand.data.name, adminCommand);
     console.log("✅ Comando /seguridad cargado.");
 } catch (e) {
@@ -314,10 +316,11 @@ if (!process.env.DISCORD_TOKEN) {
   process.exit(1);
 }
 
-client.login(process.env.DISCORD_TOKEN)
+client.login(process.env.TOKEN)
   .then(() => {
     loginResolved = true;
     console.log('🔥 LOGIN CORRECTO');
+  })
   })
   .catch(err => {
     loginResolved = true;
@@ -330,6 +333,7 @@ client.login(process.env.DISCORD_TOKEN)
 
     process.exit(1);
   });
+
 
 
 
