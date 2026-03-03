@@ -225,7 +225,7 @@ client.once(Events.ClientReady, async () => {
     client.user.setActivity('Seguridad Total', { type: ActivityType.Watching });
 
     // Registro de comandos Slash
-    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+    const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     try {
         const commandData = client.commands.map(cmd => cmd.data.toJSON());
         await rest.put(Routes.applicationCommands(client.user.id), { body: commandData });
@@ -333,3 +333,4 @@ client.login(process.env.TOKEN)
 
     process.exit(1);
   });
+
