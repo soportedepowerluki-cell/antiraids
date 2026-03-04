@@ -1,3 +1,5 @@
+const dns = require('node:dns');
+dns.setDefaultResultOrder('ipv4first');
 if (!process.env.TOKEN) {
     console.error("❌ ERROR: La variable 'TOKEN' no detectada en Render.");
     process.exit(1);
@@ -333,4 +335,5 @@ client.login(process.env.TOKEN)
 
     process.exit(1);
   });
+
 
