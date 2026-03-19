@@ -56,18 +56,52 @@ module.exports = {
             }
         }
 
-        // --- LÓGICA PÁNICO ---
+        // --- LÓGICA PÁNICO (Toggle: Activa/Desactiva) ---
         if (sub === 'panico') {
+            const panicManager = interaction.client.panicManager;
+            const isAlreadyPanic = panicManager.isPanic(interaction.guildId);
+
+            // 1. Si el modo pánico YA ESTÁ ACTIVO, lo desactivamos directamente
+            if (isAlreadyPanic) {
+                // Usamos deferReply porque restaurar permisos de muchos canales puede tardar más de 3s
+                await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+                const success = await panicManager.disablePanic(interaction.guild, interaction.user);
+                
+                return await interaction.editReply({ 
+                    content: success 
+                        ? '✅ **Modo Pánico DESACTIVADO.** Los permisos originales se están restaurando...' 
+                        : '❌ Hubo un error al intentar desactivar el modo pánico.' 
+                });
+            }
+
+            // 2. Si el modo pánico NO ESTÁ ACTIVO, pedimos confirmación vía Modal
             if (!extra.forcedSubcommand) {
                 const modal = new ModalBuilder()
                     .setCustomId('seguridad_panico_confirm')
-                    .setTitle('Protocolo de Pánico');
+                    .setTitle('Confirmar Bloqueo Total');
+
                 const input = new TextInputBuilder()
-                    .setCustomId('confirm_text').setLabel('Escribe CONFIRMAR').setStyle(TextInputStyle.Short).setPlaceholder('CONFIRMAR').setRequired(true);
+                    .setCustomId('confirm_text')
+                    .setLabel('Escribe CONFIRMAR para bloquear todo')
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder('CONFIRMAR')
+                    .setMinLength(9)
+                    .setMaxLength(9)
+                    .setRequired(true);
+
                 modal.addComponents(new ActionRowBuilder().addComponents(input));
                 return await interaction.showModal(modal);
             }
-            await interaction.reply({ content: '🚨 **PROTOCOLO DE PÁNICO ACTIVADO.**', flags: [MessageFlags.Ephemeral] });
+
+            // 3. Ejecución tras recibir la confirmación del Modal (extra.forcedSubcommand)
+            await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+            const success = await panicManager.enablePanic(interaction.guild, interaction.user);
+
+            return await interaction.editReply({ 
+                content: success 
+                    ? '🚨 **PROTOCOLO DE PÁNICO ACTIVADO.** Todos los canales han sido bloqueados para miembros.' 
+                    : '❌ No se pudo activar el protocolo o ya estaba en curso.' 
+            });
         }
 
         // --- LÓGICA CONFIG ---
