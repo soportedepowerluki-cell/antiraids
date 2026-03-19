@@ -327,6 +327,13 @@ client.on('messageCreate', async message => {
     }
 });
 console.log("🔥 LLEGANDO A LOGIN...");
+console.log("Intentando conectar a Discord...");
+console.log("¿Token detectado?:", process.env.TOKEN ? "SÍ" : "NO");
+
+client.login(process.env.TOKEN).catch(err => {
+    console.error("Fallo crítico en login:");
+    console.error(err);
+});
 
 // 🔎 Verificación de tu variable personalizada
 if (!process.env.TOKEN) {
