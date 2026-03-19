@@ -326,36 +326,42 @@ client.on('messageCreate', async message => {
         console.error('Error en messageCreate (modo pánico):', err.message);
     }
 });
+
+
+// ==========================================
+//    SECCIÓN DE ENCENDIDO FINAL (UNIFICADA)
+// ==========================================
 console.log("🔥 LLEGANDO A LOGIN...");
 console.log("Intentando conectar a Discord...");
-console.log("¿Token detectado?:", process.env.TOKEN ? "SÍ" : "NO");
-
-client.login(process.env.TOKEN).catch(err => {
-    console.error("Fallo crítico en login:");
-    console.error(err);
-});
-
-// 🔎 Verificación de tu variable personalizada
 if (!process.env.TOKEN) {
-  console.error("❌ NO SE ENCONTRÓ LA VARIABLE 'TOKEN' EN LAS VARIABLES DE ENTORNO.");
-  process.exit(1);
+    
+    console.error("------------------------------------------");
+    console.error("❌ ERROR CRÍTICO: No se detectó la variable 'TOKEN'.");
+    console.error("Asegúrate de configurarla en las Environment Variables de Render.");
+    console.error("------------------------------------------");
+    process.exit(1);
 }
 
+console.log("------------------------------------------");
+console.log("🔍 DIAGNÓSTICO DE INICIO (Anti-Raid):");
+console.log(`- Fecha: ${new Date().toISOString()}`);
+console.log(`- Token presente: SÍ (Longitud: ${process.env.TOKEN.length})`);
+console.log("------------------------------------------");
+
 client.login(process.env.TOKEN)
-  .then(() => {
-    loginResolved = true;
-    console.log('🔥 LOGIN CORRECTO');
-  })
-  .catch(err => {
-    loginResolved = true;
-
-    if (err.message.includes("An invalid token")) {
-      console.error("❌ EL TOKEN ES INVÁLIDO. Genera uno nuevo en el Developer Portal.");
-    } else {
-      console.error("❌ ERROR EN LOGIN:", err.message);
-    }
-
-    process.exit(1);
-  });
-
-
+    .then(() => {
+        loginResolved = true; // Esto detiene tu cronómetro de timeout manual
+        console.log('🔥 [BOT] Login exitoso y conectado a Discord');
+    })
+    .catch(err => {
+        loginResolved = true;
+        console.error('❌ [BOT] Error crítico en login:');
+        if (err.message.includes("An invalid token")) {
+            console.error("EL TOKEN PROPORCIONADO ES INVÁLIDO O HA SIDO REVOCADO.");
+        } else if (err.message.includes("Privileged intent")) {
+            console.error("ERROR DE INTENTS: Revisa que Message Content, Server Members y Presence estén activos en el Portal de Discord.");
+        } else {
+            console.error(err);
+        }
+        process.exit(1);
+    });
