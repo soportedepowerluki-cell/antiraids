@@ -224,7 +224,22 @@ client.panicManager = new PanicManager(client);
 
 client.once(Events.ClientReady, async () => {
     console.log(`🛡️ LOGUEADO COMO: ${client.user.tag}`);
-    client.user.setActivity('Seguridad Total', { type: ActivityType.Watching });
+
+    // --- SISTEMA DE ESTADOS ROTATIVOS ---
+    const estados = [
+        { nombre: '🛡️ Seguridad Total', tipo: ActivityType.Watching },
+        { nombre: '🔎 Escaneando Raids', tipo: ActivityType.Playing },
+        { nombre: '🚫 Cuentas < 3 días', tipo: ActivityType.Watching },
+        { nombre: '🌐 Power Lucky Network', tipo: ActivityType.Watching }
+    ];
+
+    let indice = 0;
+    // Cambia el estado cada 15 segundos
+    setInterval(() => {
+        client.user.setActivity(estados[indice].nombre, { type: estados[indice].tipo });
+        indice = (indice + 1) % estados.length;
+    }, 15000);
+    // ------------------------------------
 
     // Registro de comandos Slash
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -236,7 +251,7 @@ client.once(Events.ClientReady, async () => {
         console.error('❌ Error API Discord:', err);
     }
 
-    // Salir de servidores no autorizados
+    // Salir de servidores no autorizados (Whitelist)
     client.guilds.cache.forEach(guild => {
         if (!ALLOWED_SERVERS.includes(guild.id)) {
             console.log(`🚫 Saliendo de servidor ajeno: ${guild.name} (${guild.id})`);
