@@ -30,7 +30,7 @@ const client = new Client({
    intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages
-  ],
+  ]
 });
 
 // >>> DEBUG ADICIONAL: PONER ANTES DE client.login(...)
