@@ -334,6 +334,13 @@ client.on('messageCreate', async message => {
 // ==========================================
 //    SECCIÓN DE ENCENDIDO FINAL (UNIFICADA)
 // ==========================================
+// ESTO ES NUEVO: Nos dirá qué está hablando el bot con Discord
+client.on('debug', info => {
+    // Solo mostramos mensajes importantes de la conexión
+    if(info.includes('Session') || info.includes('Ready') || info.includes('Heartbeat')) {
+        console.log(`📡 [DEBUG] ${info}`);
+    }
+});
 const conectarBot = () => {
     console.log("🔥 LLEGANDO A LOGIN...");
     console.log("Intentando conectar a Discord...");
