@@ -1,6 +1,8 @@
 const dns = require('node:dns');
 dns.setDefaultResultOrder('ipv4first');
-if (!process.env.TOKEN) {
+const TOKEN = (process.env.TOKEN || '').trim();
+
+if (!TOKEN) {
     console.error("❌ ERROR: La variable 'TOKEN' no detectada en Render.");
     process.exit(1);
 }
@@ -25,21 +27,15 @@ http.createServer((req, res) => {
 }).listen(process.env.PORT || 3000);
 
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ],
+   intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages
+],
     // ESTO ES LO NUEVO PARA RENDER:
     rest: { 
         timeout: 60000,
         retries: 5 
     },
-    ws: { 
-        properties: { $os: 'linux' },
-        compress: false // Desactivamos compresión para evitar errores de red
-    }
 });
 
 // >>> DEBUG ADICIONAL: PONER ANTES DE client.login(...)
@@ -250,7 +246,7 @@ client.once(Events.ClientReady, async () => {
     // ------------------------------------
 
     // Registro de comandos Slash
-    const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+    const rest = new REST({ version: '10' }).setToken(TOKEN);
     try {
         const commandData = client.commands.map(cmd => cmd.data.toJSON());
         await rest.put(Routes.applicationCommands(client.user.id), { body: commandData });
@@ -341,11 +337,21 @@ client.on('messageCreate', async message => {
 // ==========================================
 // ESTO ES NUEVO: Nos dirá qué está hablando el bot con Discord
 client.on('debug', info => {
-    // Solo mostramos mensajes importantes de la conexión
-    if(info.includes('Session') || info.includes('Ready') || info.includes('Heartbeat')) {
-        console.log(`📡 [DEBUG] ${info}`);
-    }
+    console.log(`📡 [DEBUG] ${info}`);
 });
+
+client.on('shardError', err => {
+    console.error('❌ SHARD ERROR:', err);
+});
+
+client.on('shardDisconnect', (event, shardId) => {
+    console.error(`❌ SHARD DISCONNECT (Shard ${shardId}):`, event?.code, event?.reason);
+});
+
+client.on('error', err => {
+    console.error('❌ CLIENT ERROR:', err);
+});
+
 const conectarBot = () => {
     console.log("🔥 LLEGANDO A LOGIN...");
     console.log("Intentando conectar a Discord...");
@@ -364,12 +370,12 @@ const conectarBot = () => {
     console.log(`- Token presente: SÍ (Longitud: ${process.env.TOKEN.length})`);
     console.log("------------------------------------------");
 
-    client.login(process.env.TOKEN)
-        .then(() => {
-            loginResolved = true; 
-            console.log('🔥 [BOT] Login exitoso y conectado a Discord');
-        })
-        .catch(err => {
+    client.login(TOKEN)
+    .then(() => {
+        loginResolved = true;
+        console.log('🔥 [BOT] Login exitoso y conectado a Discord');
+    })
+    .catch(err => {
             console.error('❌ [BOT] Error en login:');
 
             if (err.message.includes("An invalid token")) {
