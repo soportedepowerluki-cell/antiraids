@@ -35,7 +35,7 @@ module.exports = {
         const isAdmin = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
 
         if (!hasRole && !isAdmin) {
-            return await interaction.reply({ content: '❌ No tienes permiso.', flags: [MessageFlags.Ephemeral] });
+            return await interaction.reply({ content: '❌ No tienes permiso.', ephemeral: true });
         }
 
         const sub = extra.forcedSubcommand || interaction.options.getSubcommand();
@@ -52,7 +52,7 @@ module.exports = {
                 
                 return await interaction.reply({ content: msg });
             } catch (err) {
-                return await interaction.reply({ content: '❌ No pude cambiar el modo lento. Revisa mis permisos.', flags: [MessageFlags.Ephemeral] });
+                return await interaction.reply({ content: '❌ No pude cambiar el modo lento. Revisa mis permisos.', ephemeral: true });
             }
         }
 
@@ -64,7 +64,7 @@ module.exports = {
             // 1. Si el modo pánico YA ESTÁ ACTIVO, lo desactivamos directamente
             if (isAlreadyPanic) {
                 // Usamos deferReply porque restaurar permisos de muchos canales puede tardar más de 3s
-                await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+                await interaction.deferReply({ ephemeral: true });
                 const success = await panicManager.disablePanic(interaction.guild, interaction.user);
                 
                 return await interaction.editReply({ 
