@@ -30,7 +30,10 @@ const client = new Client({
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent
-    ]
+    ],
+    // Esto ayuda a que la conexión no se muera en Render
+    rest: { timeout: 60000 },
+    ws: { properties: { $os: 'linux' } }
 });
 
 // >>> DEBUG ADICIONAL: PONER ANTES DE client.login(...)
@@ -331,37 +334,49 @@ client.on('messageCreate', async message => {
 // ==========================================
 //    SECCIÓN DE ENCENDIDO FINAL (UNIFICADA)
 // ==========================================
-console.log("🔥 LLEGANDO A LOGIN...");
-console.log("Intentando conectar a Discord...");
-if (!process.env.TOKEN) {
-    
-    console.error("------------------------------------------");
-    console.error("❌ ERROR CRÍTICO: No se detectó la variable 'TOKEN'.");
-    console.error("Asegúrate de configurarla en las Environment Variables de Render.");
-    console.error("------------------------------------------");
-    process.exit(1);
-}
+const conectarBot = () => {
+    console.log("🔥 LLEGANDO A LOGIN...");
+    console.log("Intentando conectar a Discord...");
 
-console.log("------------------------------------------");
-console.log("🔍 DIAGNÓSTICO DE INICIO (Anti-Raid):");
-console.log(`- Fecha: ${new Date().toISOString()}`);
-console.log(`- Token presente: SÍ (Longitud: ${process.env.TOKEN.length})`);
-console.log("------------------------------------------");
-
-client.login(process.env.TOKEN)
-    .then(() => {
-        loginResolved = true; // Esto detiene tu cronómetro de timeout manual
-        console.log('🔥 [BOT] Login exitoso y conectado a Discord');
-    })
-    .catch(err => {
-        loginResolved = true;
-        console.error('❌ [BOT] Error crítico en login:');
-        if (err.message.includes("An invalid token")) {
-            console.error("EL TOKEN PROPORCIONADO ES INVÁLIDO O HA SIDO REVOCADO.");
-        } else if (err.message.includes("Privileged intent")) {
-            console.error("ERROR DE INTENTS: Revisa que Message Content, Server Members y Presence estén activos en el Portal de Discord.");
-        } else {
-            console.error(err);
-        }
+    if (!process.env.TOKEN) {
+        console.error("------------------------------------------");
+        console.error("❌ ERROR CRÍTICO: No se detectó la variable 'TOKEN'.");
+        console.error("Asegúrate de configurarla en las Environment Variables de Render.");
+        console.error("------------------------------------------");
         process.exit(1);
-    });
+    }
+
+    console.log("------------------------------------------");
+    console.log("🔍 DIAGNÓSTICO DE INICIO (Anti-Raid):");
+    console.log(`- Fecha: ${new Date().toISOString()}`);
+    console.log(`- Token presente: SÍ (Longitud: ${process.env.TOKEN.length})`);
+    console.log("------------------------------------------");
+
+    client.login(process.env.TOKEN)
+        .then(() => {
+            loginResolved = true; 
+            console.log('🔥 [BOT] Login exitoso y conectado a Discord');
+        })
+        .catch(err => {
+            console.error('❌ [BOT] Error en login:');
+
+            if (err.message.includes("An invalid token")) {
+                console.error("EL TOKEN ES INVÁLIDO. Deteniendo proceso...");
+                process.exit(1);
+            } 
+            else if (err.message.includes("Privileged intent")) {
+                console.error("ERROR DE INTENTS: Revisa el Portal de Discord.");
+                process.exit(1);
+            } 
+            else {
+                // Si el error es de RED o CONEXIÓN (lo más probable en Render)
+                // NO cerramos el proceso, esperamos 15 segundos y reintentamos.
+                console.error(`FALLO DE RED: ${err.message}`);
+                console.warn("Reintentando conexión en 15 segundos...");
+                setTimeout(conectarBot, 15000);
+            }
+        });
+};
+
+// Llamamos a la función por primera vez
+conectarBot();
