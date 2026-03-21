@@ -30,12 +30,7 @@ const client = new Client({
    intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages
-],
-    // ESTO ES LO NUEVO PARA RENDER:
-    rest: { 
-        timeout: 60000,
-        retries: 5 
-    },
+  ],
 });
 
 // >>> DEBUG ADICIONAL: PONER ANTES DE client.login(...)
