@@ -31,13 +31,18 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent
     ],
-    // Esto ayuda a que la conexión no se muera en Render
-    rest: { timeout: 60000 },
-    ws: { properties: { $os: 'linux' } }
+    // ESTO ES LO NUEVO PARA RENDER:
+    rest: { 
+        timeout: 60000,
+        retries: 5 
+    },
+    ws: { 
+        properties: { $os: 'linux' },
+        compress: false // Desactivamos compresión para evitar errores de red
+    }
 });
 
 // >>> DEBUG ADICIONAL: PONER ANTES DE client.login(...)
-
 process.on('unhandledRejection', err => {
   console.error('UNHANDLED REJECTION >', err && err.stack ? err.stack : err);
 });
