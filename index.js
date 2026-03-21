@@ -351,7 +351,7 @@ const conectarBot = () => {
     console.log("🔥 LLEGANDO A LOGIN...");
     console.log("Intentando conectar a Discord...");
 
-    if (!process.env.TOKEN) {
+    if (!TOKEN) {
         console.error("------------------------------------------");
         console.error("❌ ERROR CRÍTICO: No se detectó la variable 'TOKEN'.");
         console.error("Asegúrate de configurarla en las Environment Variables de Render.");
