@@ -1,9 +1,12 @@
+require('dotenv').config();
 const dns = require('node:dns');
 dns.setDefaultResultOrder('ipv4first');
-const TOKEN = (process.env.TOKEN || '').trim();
+const TOKEN = process.env.TOKEN;
+
+console.log("TOKEN DESDE RENDER:", TOKEN ? "CARGADO" : "NO CARGADO");
 
 if (!TOKEN) {
-    console.error("❌ ERROR: La variable 'TOKEN' no detectada en Render.");
+    console.error("❌ ERROR: TOKEN no detectado.");
     process.exit(1);
 }
 const {
