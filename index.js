@@ -58,7 +58,7 @@ setTimeout(() => {
 }, 30000);
 
 // Whitelist con tu servidor añadido
-const ALLOWED_SERVERS = ['1433313752488607821', '1343353558665396406', '1468695069858201806'];
+const ALLOWED_SERVERS = ['1340442398442127480', '1458243569075884219'];
 const DIAS_MINIMOS = 3;
 
 client.commands = new Collection();
